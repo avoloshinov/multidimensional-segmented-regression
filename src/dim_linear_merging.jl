@@ -3,7 +3,7 @@ using LinearAlgebra
 struct NodeRect
     data::Array{Array{Float64,1},1}     # all the points that belong in this node / in this rectangle
     indices::Array{Array{Float64,1},1}  # indices of the first z dimensions of the rectangle
-    #theta::Array{Float64,1}
+    theta::Array{Float64,1}
     children::Array{Any,1}              # either an array of NodeRects, or [] if leaf
     parent::Any                         # 0 is root, a NodeRect otherwise
 end
@@ -11,7 +11,6 @@ end
 function is_leaf(node::NodeRect)
     return isempty(node.children)
 end
-
 
 function print_tree(root::NodeRect, levels::Int, print_empty_nodes::Bool)
     cur_children = [root]
@@ -25,6 +24,7 @@ function print_tree(root::NodeRect, levels::Int, print_empty_nodes::Bool)
             if print_empty_nodes || cur.data != []
                 println("data is ", cur.data)
                 println("indices are ", cur.indices)
+                println("theta is ", cur.theta)
                 println("is leaf ", is_leaf(cur))
                 for child in cur_children[i].children
                     push!(cur_children_temp, child)
@@ -41,12 +41,12 @@ function change_to_matrix_format(X::Array{Array{Float64,1},1})
     return transpose(hcat(X...))
 end
 
-#function get_theta( y::Array{Float64,1})
-#    theta = change_to_matrix_format(data) \ y[left_index:right_index]
-
-# fit-rectangular piece?
-function new_node(data::Any, indices::Array{Array{Float64,1},1}, parent::Any)
-    return NodeRect(data,indices,[],parent)
+function change_to_array_format(X::Array{Float64,2})
+    Y = Array{Array{Float64,1},1}(undef,0)
+    for row=1:size(X)[1]
+        push!(Y,X[row,:])
+    end
+    return Y
 end
 
 # array of arrays of rows -> array of arrays of columns
@@ -54,8 +54,20 @@ function transform_matrix(X::Array{Array{Float64,1},1})
     return [hcat(X...)[i, :] for i in 1:size(hcat(X...), 1)]
 end
 
-# generate array of the first 2^z binary numbers
-function bit_list(z::Int)
+# fit-rectangular piece?
+function new_node(data::Array{Array{Float64,1},1}, y::Any, indices::Array{Array{Float64,1},1}, parent::Any)
+    X = change_to_matrix_format(data)
+    if y != []
+        theta = X \ y
+    else
+        theta = []
+    end
+    return NodeRect(data,indices,theta,[],parent)
+end
+
+# outputs a dictionary where the keys are the possible indices
+# and the values are empty (to be filled with data points)
+function construct_current_rectangles(z::Int, new_index_bounds::Array{Array{Array{Float64,1},1},1})
     flag=0
     count = 2^z
     the_bit_list = Array{Int}(undef,count, z)
@@ -74,7 +86,23 @@ function bit_list(z::Int)
             end
         end
     end
-    return the_bit_list
+
+    all_indices = Dict{Array{Array{Float64,1},1},Array{Array{Float64,1}}}()
+
+    for i=1 : 2^z
+        #define the indices of one rectangle [[dim1-left,dim1-right],[dim2-left,dim2-right],etc]
+        indices = Array{Array{Float64,1},1}(undef,0)
+        for j=1 : z
+            if the_bit_list[i,j]==0
+                push!(indices,new_index_bounds[j][1])
+            else
+                push!(indices, new_index_bounds[j][2])
+            end
+        end
+        all_indices[indices]=[]
+    end
+
+    return all_indices
 end
 
 # ranks the first z coordinates of X
@@ -95,7 +123,7 @@ function coordinate_ranking(X::Array{Array{Float64,1},1},z::Int)
 end
 
 # given a parent, splits the data into 2^z children / nodeRects
-function add_children_to_parent(parent::NodeRect, z::Int, max_val::Float64, data_ordering::Dict{Array{Float64,1},Array{Int64,1}})
+function add_children_to_parent(parent::NodeRect, z::Int, data_ordering::Dict{Array{Float64,1},Array{Int64,1}})
 
     X = parent.data
     n = size(X)[1]
@@ -109,25 +137,9 @@ function add_children_to_parent(parent::NodeRect, z::Int, max_val::Float64, data
         push!(new_index_bounds,[[left,middle],[middle,right]])
     end
 
-    # all combinations of selecting bounds for children in each dimension
-    all_possible_bounds = bit_list(z)
-
     # maps indicies of rectangle to points in that rectangle
-    all_indices = Dict{Array{Array{Float64,1},1},Array{Array{Float64,1}}}()
-
-    #find what points belong within each of the children boundaries
-    for i=1 : 2^z
-        #define the indices of one rectangle [[dim1-left,dim1-right],[dim2-left,dim2-right],etc]
-        indices = Array{Array{Float64,1},1}(undef,0)
-        for j=1 : z
-            if all_possible_bounds[i,j]==0
-                push!(indices,new_index_bounds[j][1])
-            else
-                push!(indices, new_index_bounds[j][2])
-            end
-        end
-        all_indices[indices]=[]
-    end
+    all_indices = construct_current_rectangles(z,new_index_bounds)
+    all_indices_y_vals = construct_current_rectangles(z,new_index_bounds)
 
     # for each data point, decide which child it belongs in
     for i=1:n
@@ -146,20 +158,22 @@ function add_children_to_parent(parent::NodeRect, z::Int, max_val::Float64, data
             end
         end
         push!(all_indices[indices], X[i])
+        push!(all_indices_y_vals[indices],[y[i]])
     end
 
     for (indices, x_vals) in all_indices
-        push!(parent.children, new_node(x_vals, indices, parent))
+        y =vcat(all_indices_y_vals[indices]...)
+        push!(parent.children, new_node(x_vals, y, indices, parent))
     end
 
     return [parent,parent.children]
 end
 
 
-function create_tree(X::Array{Array{Float64,1},1}, z::Int, levels::Int)
+function create_tree(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::Int, levels::Int)
     n = float(size(X)[1])
-    indices = fill([1.0,n],z)
-    root = new_node(X,indices,0)
+    indices = fill([0,n+1],z)
+    root = new_node(X, y, indices,0)
     cur_children = Array{NodeRect,1}(undef,0)
     cur_children = [root]
     cur_children_temp = Array{NodeRect,1}(undef,0)
@@ -169,13 +183,12 @@ function create_tree(X::Array{Array{Float64,1},1}, z::Int, levels::Int)
 
     for level=1:levels
         for i=1:size(cur_children)[1]
-            output = add_children_to_parent(cur_children[i],z,n,data_ordering)
+            output = add_children_to_parent(cur_children[i],z,data_ordering)
             cur_children[i] = output[1]
             for child in output[2]
                 push!(cur_children_temp, child)
             end
         end
-        n=ceil(n/2)
         cur_children = cur_children_temp
         cur_children_temp = Array{NodeRect,1}(undef,0)
     end
@@ -183,58 +196,116 @@ function create_tree(X::Array{Array{Float64,1},1}, z::Int, levels::Int)
     return root
 end
 
+#even number of points in each true rectange?
+function generate_random_regression_data(num_rectangles::Int, n::Int, d::Int, z::Int, sigma::Float64)
+    X = randn(n, d)
+    Y = change_to_array_format(X)
+    data_ordering = coordinate_ranking(Y,z)
+    # todo matrix to array of arrays for input
+
+    num_intervals_per_dim = floor(Int,num_rectangles^(1/z))
+    num_per_rect = floor(n/num_rectangles)
+
+    ystar = Array{Float64,1}(undef,n)
+
+    #all_intervals = Array{Array{Array{Float64, 1},1},1}(undef,0)
+
+    intervals_1dim = Array{Array{Int64,1},1}(undef,0)
+    lower = 0
+    num_points_per_slice = floor(n/num_intervals_per_dim)
+    upper = num_points_per_slice
+    for i=1:num_intervals_per_dim
+        push!(intervals_1dim,[lower,upper])
+        lower=upper
+        upper=upper+num_points_per_slice
+    end
+
+    N = floor(Int,num_intervals_per_dim)
+    all_combos_digits = reverse.(digits.(0:N^N-1,base=N,pad=N)) #Array{Array{Int64,1},1}_
+
+    # construct dictionaries where the indicies of intervals in each dimensions are the keys
+    # values will be the indices of the X values that belong there
+    all_rects = Dict{Array{Array{Int,1},1},Array{Int,1}}()
+    for i=1:size(all_combos_digits)[1]
+        one_rect = Array{Array{Int,1},1}(undef,0)
+        for j=1:num_intervals_per_dim
+            ind = all_combos_digits[i][j]+1
+            push!(one_rect,intervals_1dim[ind])
+        end
+            all_rects[one_rect]=[]
+    end
+
+    for i=1:n
+        data_ind = data_ordering[X[i,:]]
+        indices = Array{Array{Float64,1},1}(undef,0)
+        for j=1:z
+            cur = data_ind[j]
+            h=1
+            while h<= num_intervals_per_dim
+                low = intervals_1dim[h][1]
+                high = intervals_1dim[h][2]
+                if low <= cur && cur < high
+                    push!(indices, [low,high])
+                    h=num_intervals_per_dim+1
+                elseif (h==num_intervals_per_dim)
+                    push!(indices, [low,high])
+                end
+                h=h+1
+            end
+        end
+        push!(all_rects[indices], i)
+    end
 
 
+    for (indices, x_ind_list) in all_rects
+        beta = 2 * rand(Float64, d) + ones(d)
+
+        Y = Array{Array{Float64,1},1}(undef,0)
+        for q in x_ind_list
+            push!(Y, X[q,:])
+        end
+
+        if Y != []
+            Z = change_to_matrix_format(Y)
+            labels = vec(Z * beta)
+            for q=1:size(x_ind_list)[1]
+                ystar[x_ind_list[q]]=labels[q]
+            end
+        end
+    end
+
+    y = ystar + sigma * randn(n)
+    return y, ystar, change_to_array_format(X)
+end
 
 
 ########################################################
 
+# is this correct
+function rectangle_size(p::NodeRect)
+  return size(X)[1]
+end
 
-#
-# function rectangle_size(p::LinearPiece)
-#   return p.right_index - p.left_index + 1
-# end
-#
-# function linear_piece_merging_error(p::LinearPiece, X::Array{Float64,2}, y::Array{Float64,1}, sigma::Float64)
-#   return linear_piece_error(p, X, y) - piece_length(p) * sigma^2
-# end
-#
-# function linear_piece_error(p::LinearPiece, X::Array{Float64,2}, y::Array{Float64,1})
-#   return norm(y[p.left_index : p.right_index] - X[p.left_index:p.right_index, :] * p.theta)^2
-# end
-#
-# function linear_fit_error(X::Array{Float64,2}, y::Array{Float64,1}, left_index::Int, right_index::Int)
-#   p = fit_linear_piece(X, y, left_index, right_index)
-#   return linear_piece_error(p, X, y)
-# end
+function rectangle_piece_merging_error(p::NodeRect, X::Array{Float64,2}, y::Array{Float64,1}, sigma::Float64)
+  return rectangle_piece_error(p, X, y) - piece_length(p) * sigma^2
+end
+
+# this needs to be the correct y tho... todo.....
+function recangle_piece_error(p::NodeRect, y::Array{Float64,1})
+  return norm(y - change_to_matrix_format(p.data) * p.theta)^2
+end
+
+#function linear_fit_error(X::Array{Float64,2}, y::Array{Float64,1}, left_index::Int, right_index::Int)
+#  p = fit_linear_piece(X, y, left_index, right_index)
+#  return linear_piece_error(p, X, y)
+#end
+
+function mse(yhat, ystar)
+   return (1.0 / length(yhat)) * sum((yhat - ystar).^2)
+end
 
 
 ##################
-
-#
-# function generate_equal_size_random_regression_data(num_segments::Int, n::Int, d::Int, sigma::Float64)
-#   X = randn(n, d)
-#
-#   num_per_bin = floor(Int, n / num_segments)
-#   num_bins_plusone = n % num_segments
-#
-#   ystar = Array{Float64}(undef, 0)
-#   cur_start = 1
-#   for ii = 1 : num_bins_plusone
-#     cur_end = cur_start + num_per_bin
-#     beta = 2 * rand(Float64, d) + 1
-#     append!(ystar, vec(X[cur_start:cur_end,:] * beta))
-#     cur_start = cur_end + 1
-#   end
-#   for ii = (num_bins_plusone + 1) : num_segments
-#     cur_end = cur_start + num_per_bin - 1
-#     beta = 2 * rand(Float64, d) + ones(d)
-#     append!(ystar, vec(X[cur_start:cur_end,:] * beta))
-#     cur_start = cur_end + 1
-#   end
-#   y = ystar + sigma * randn(n)
-#   return y, ystar, X
-# end
 #
 # function partition_to_vector(X::Array{Float64,2}, pieces::Array{LinearPiece,1})
 #   n = pieces[end].right_index
@@ -250,10 +321,6 @@ end
 #   return y
 # end
 #
-#
-# function mse(yhat, ystar)
-#   return (1.0 / length(yhat)) * sum((yhat - ystar).^2)
-# end
 #
 #
 # function fit_linear_merging(X::Array{Float64,2}, y::Array{Float64,1}, sigma::Float64, num_target_pieces::Int, num_holdout_pieces::Int; initial_merging_size::Int=-1)
