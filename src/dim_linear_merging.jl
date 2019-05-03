@@ -405,3 +405,16 @@ function fit_linear_merging(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, s
 
     return leaves
 end
+
+function leaves_to_yhat(X::Array{Array{Float64,1},1}, leaves::Array{NodeRect,1})
+    n = size(X)[1]
+    yhat = Array{Float64,1}(undef,n)
+
+    for leaf in leaves
+        for index in leaf.data
+            yhat[index] = sum(X[index] .* leaf.theta)
+        end
+    end
+
+    return yhat
+end
