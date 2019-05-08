@@ -232,15 +232,52 @@ function create_tree(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::Int, 
     return root, all_leaves
 end
 
+
+function combos(interval_options::Array{Array{Int,1},1}, z::Int)
+    n = length(interval_options)
+    all_rects = Dict{Array{Array{Int,1},1},Array{Int,1}}()
+    cur = fill(1,z)
+    final_cur = fill(n,z)
+
+    notdone = true
+    while notdone
+        one_rect = Array{Array{Int,1},1}(undef,0)
+        for a in cur
+            push!(one_rect,interval_options[a])
+        end
+        all_rects[one_rect]=[]
+
+        if cur == final_cur
+            notdone = false
+        end
+
+        i=1
+        while i<=z
+            if cur[i]<n
+                cur[i]=cur[i]+1
+                i=z+1
+            else #cur[i]==z
+                cur[i]=1
+            end
+            i=i+1
+        end
+    end
+    return all_rects
+end
+
 #even number of points in each true rectange?
 function generate_random_regression_data(num_rectangles::Int, n::Int, d::Int, z::Int, sigma::Float64)
     X = randn(n, d)
     Y = change_to_array_format(X)
     data_ordering = coordinate_ranking(Y,z)
-    # todo matrix to array of arrays for input
 
     num_intervals_per_dim = floor(Int,num_rectangles^(1/z))
-    num_per_rect = floor(n/num_rectangles)
+
+    if num_intervals_per_dim != num_rectangles^(1/z)
+        error("can't partion into equal size rectangles with this parameter of num_rectangles")
+    end
+
+    num_per_rect = floor(Int,n/num_rectangles)
 
     ystar = Array{Float64,1}(undef,n)
 
@@ -248,7 +285,7 @@ function generate_random_regression_data(num_rectangles::Int, n::Int, d::Int, z:
 
     intervals_1dim = Array{Array{Int64,1},1}(undef,0)
     lower = 0
-    num_points_per_slice = floor(n/num_intervals_per_dim)
+    num_points_per_slice = floor(Int,n/num_intervals_per_dim)
     upper = num_points_per_slice
     for i=1:num_intervals_per_dim
         push!(intervals_1dim,[lower,upper])
@@ -256,20 +293,7 @@ function generate_random_regression_data(num_rectangles::Int, n::Int, d::Int, z:
         upper=upper+num_points_per_slice
     end
 
-    N = floor(Int,num_intervals_per_dim)
-    all_combos_digits = reverse.(digits.(0:N^N-1,base=N,pad=N)) #Array{Array{Int64,1},1}_
-
-    # construct dictionaries where the indicies of intervals in each dimensions are the keys
-    # values will be the indices of the X values that belong there
-    all_rects = Dict{Array{Array{Int,1},1},Array{Int,1}}()
-    for i=1:size(all_combos_digits)[1]
-        one_rect = Array{Array{Int,1},1}(undef,0)
-        for j=1:num_intervals_per_dim
-            ind = all_combos_digits[i][j]+1
-            push!(one_rect,intervals_1dim[ind])
-        end
-            all_rects[one_rect]=[]
-    end
+    all_rects = combos(intervals_1dim,z)
 
     for i=1:n
         data_ind = data_ordering[i]
@@ -352,7 +376,7 @@ function find_candidate_set(leaves::Array{NodeRect,1})
     return candidate_pieces
 end
 
-function fit_linear_merging(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, sigma::Float64, z::Int, levels::Int, k::Int)
+function fit_linear_merging(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, sigma::Float64, z::Int, levels::Int, k::Int, upper_bound::Float64)
     root, leaves = create_tree(X, y, z,levels)
     #print_tree(root,levels,true)
     n = length(y)
@@ -364,7 +388,7 @@ function fit_linear_merging(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, s
 
 
     #make sure the candidate set is large enough
-    while length(candidate_pieces) > 2*kp
+    while length(candidate_pieces) > upper_bound#2*kp
         #println("merging happening")
         #println("candidate length", length(candidate_pieces))
         #println("needed size", 2*kp)
@@ -379,7 +403,7 @@ function fit_linear_merging(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, s
         # then find the set of parents with the largest errors
         # Select the num_holdout_pieces'th largest error (counting from the largest
         # error down) as threshold.
-        selected_threshold = ceil(Int, length(candidate_pieces) - 2*kp + 1)
+        selected_threshold = max(ceil(Int, length(candidate_pieces) - upper_bound + 1))
         error_threshold = (sort(candidate_errors))[selected_threshold]
 
         leaves_to_remove = Array{NodeRect,1}(undef,0)
