@@ -14,26 +14,26 @@ function trial(k::Int, n::Int, d::Int, z::Int, sigma::Float64, upper_bound::Floa
     println()
 end
 
-# #trial(k::Int, n::Int, d::Int, z::Int, sigma::Float64, upper_bound::Float64)
-# println("Piecewise in 2 dimensions:")
-# println()
-# k=16
-#
-# println("changes with increasing number of samples:")
-# @time trial(k, k*100, 5, 2, 1.0, convert(Float64,k))
-# @time trial(k, k*1000, 5, 2, 1.0, convert(Float64,k))
-#
-# k=64
-# @time trial(k, k*100, 5, 2, 1.0, convert(Float64,k))
-# @time trial(k, k*200, 5, 2, 1.0, convert(Float64,k))
-#
-# println()
-# println("changes with increasing number of pieces in output")
-# k=16
-# @time trial(k, k*100, 5, 2, 1.0, convert(Float64,k))
-# @time trial(k, k*1000, 5, 2, 1.0, convert(Float64,k/4))
-# @time trial(k, k*1000, 5, 2, 1.0, convert(Float64,k/8))
-#
+#trial(k::Int, n::Int, d::Int, z::Int, sigma::Float64, upper_bound::Float64)
+println("Piecewise in 2 dimensions:")
+println()
+k=16
+
+println("changes with increasing number of samples:")
+@time trial(k, k*100, 5, 2, 1.0, convert(Float64,k))
+@time trial(k, k*1000, 5, 2, 1.0, convert(Float64,k))
+
+k=64
+@time trial(k, k*100, 5, 2, 1.0, convert(Float64,k))
+@time trial(k, k*200, 5, 2, 1.0, convert(Float64,k))
+
+println()
+println("changes with increasing number of pieces in output")
+k=16
+@time trial(k, k*100, 5, 2, 1.0, convert(Float64,k))
+@time trial(k, k*1000, 5, 2, 1.0, convert(Float64,k/4))
+@time trial(k, k*1000, 5, 2, 1.0, convert(Float64,k/8))
+
 
 println("Piecewise in 3 dimensions")
 
