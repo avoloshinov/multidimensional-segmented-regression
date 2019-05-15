@@ -103,5 +103,28 @@ function generate_random_regression_data(num_rectangles::Int, n::Int, d::Int, z:
     end
 
     y = ystar + sigma * randn(n)
-    return y, ystar, change_to_array_format(X)
+
+    y_opt = Array{Float64,1}(undef,n)
+
+    for (indices, x_ind_list) in all_rects
+
+        Y = Array{Array{Float64,1},1}(undef,0)
+        y_cur = Array{Float64,1}(undef,0)
+        for q in x_ind_list
+            push!(Y, X[q,:])
+            push!(y_cur,y[q])
+        end
+
+        if Y != []
+            Z = change_to_matrix_format(Y)
+            theta = Z \ y_cur
+            labels = vec(Z * theta)
+
+            for q=1:size(x_ind_list)[1]
+                y_opt[x_ind_list[q]]=labels[q]
+            end
+        end
+    end
+
+    return y, ystar, y_opt, change_to_array_format(X)
 end
