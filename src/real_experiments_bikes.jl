@@ -11,7 +11,7 @@ f = CSV.File("day.csv")
 X = Array{Array{Float64,1}}(undef,0)
 y = Array{Float64,1}(undef,0)
 for row in f
-    push!(X, [row.mnth,row.temp, row.hum,row.windspeed])
+    push!(X, [row.hum,row.temp,row.windspeed,row.mnth])
     push!(y, row.cnt)
     #println("a=$(row.hr),a=$(row.hr), b=$(row.holiday), c=$(row.temp)")
     #push!(X, [row.lstat,row.rm, row.crim,row.dis]) #row.mnth
@@ -21,7 +21,7 @@ end
 function merging(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::Int, k::Int, n::Int)
     stop_merge_param = k/4
     levels = ceil(Int,log(2,n))
-    leaves = fit_linear_merging(X, y, 10.0, z, levels, k, convert(Float64,stop_merge_param))
+    leaves = fit_linear_merging(X, y, 0.0, z, levels, k, convert(Float64,stop_merge_param))
     yhat = leaves_to_yhat(X,leaves) #reconstruct the yhat from leaves
     return yhat, length(leaves)
 end

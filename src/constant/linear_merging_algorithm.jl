@@ -1,4 +1,5 @@
 include("building_tree_structure.jl")
+using Statistics
 
 function rectangle_size(p::NodeRect)
     return length(p.data)
@@ -6,9 +7,10 @@ end
 
 function rectangle_piece_merging_error(p::NodeRect, X::Array{Array{Float64,1},1}, y::Array{Float64,1}, sigma::Float64)
     new_y = indices_to_sub_labels(y, p.data)
-    new_X =indices_to_sub_matrix(X, p.data)
-    error = norm(new_y - change_to_matrix_format(new_X) * p.theta)^2
-    return error - rectangle_size(p) * sigma^2
+    size = length(new_y)
+    fit = fill(p.theta[1],size)
+    error = mse(new_y,fit)
+    return error 
 end
 
 function mse(yhat, ystar)
@@ -94,7 +96,7 @@ function leaves_to_yhat(X::Array{Array{Float64,1},1}, leaves::Array{NodeRect,1})
 
     for leaf in leaves
         for index in leaf.data
-            yhat[index] = sum(X[index] .* leaf.theta)
+            yhat[index] = leaf.theta[1]
         end
     end
 

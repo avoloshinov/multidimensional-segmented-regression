@@ -37,6 +37,13 @@ function merging_kover8(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::In
     return yhat, length(leaves)
 end
 
+function merging_kover16(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::Int, k::Int, n::Int)
+    levels = ceil(Int,log(2,n))
+    leaves = fit_linear_merging(X, y, sigma, z, levels, k, convert(Float64,k/16))
+    yhat = leaves_to_yhat(X,leaves) #reconstruct the yhat from leaves
+    return yhat, length(leaves)
+end
+
 function cart_trial(X::Array{Array{Float64,1},1}, y::Array{Float64,1},k::Int)
     regressor = DecisionTreeRegressor(max_leaf_nodes=k) #can do max_depth too
     regressor.fit(X, y)
@@ -45,7 +52,7 @@ function cart_trial(X::Array{Array{Float64,1},1}, y::Array{Float64,1},k::Int)
 end
 
 function run_experiments(num_trials::Int, sigma::Float64, k::Int, n_vals::Array{Int,1}, d::Int, z::Int)
-    algos = Dict([("merging_k", merging_k), ("merging_kover2", merging_kover2), ("merging_kover4", merging_kover4),("merging_kover8", merging_kover8)])
+    algos = Dict([("merging_k", merging_k), ("merging_kover2", merging_kover2), ("merging_kover4", merging_kover4),("merging_kover8", merging_kover8),("merging_kover16", merging_kover16)])
 
     mses = Dict{String, Array{Float64, 2}}()
     times = Dict{String, Array{Float64, 2}}()
@@ -117,6 +124,7 @@ function run_experiments(num_trials::Int, sigma::Float64, k::Int, n_vals::Array{
     mses_std["true fit"] = vec(std(true_mses, dims=2))
     pieces_mean["true fit"] = vec(mean(true_pieces, dims=2))
     pieces_std["true fit"] = vec(std(true_pieces, dims=2))
+
     mses_mean["CART fit"] = vec(mean(cart_mses, dims=2))
     mses_std["CART fit"] = vec(std(cart_mses, dims=2))
     pieces_mean["CART fit"] = vec(mean(cart_pieces, dims=2))
