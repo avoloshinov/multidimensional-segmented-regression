@@ -53,7 +53,7 @@ function new_node(data_indices::Array{Int,1}, X::Array{Array{Float64,1},1}, y::A
     y_new = indices_to_sub_labels(y,data_indices)
 
     if y_new != []
-        theta = Z \ y_new
+        theta = pinv(Z)*y_new
     else
         theta = []
     end

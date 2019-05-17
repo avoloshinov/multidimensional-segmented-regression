@@ -86,7 +86,8 @@ function generate_random_regression_data(num_rectangles::Int, n::Int, d::Int, z:
 
 
     for (indices, x_ind_list) in all_rects
-        beta = 2 * rand(Float64, d) + ones(d)
+        #beta2 = fill(rand(Float64, 1),d)
+        #beta = vcat(beta2...)
 
         Y = Array{Array{Float64,1},1}(undef,0)
         for q in x_ind_list
@@ -95,9 +96,9 @@ function generate_random_regression_data(num_rectangles::Int, n::Int, d::Int, z:
 
         if Y != []
             Z = change_to_matrix_format(Y)
-            labels = vec(Z * beta)
+            label = rand(Float64, 1)
             for q=1:size(x_ind_list)[1]
-                ystar[x_ind_list[q]]=labels[q]
+                ystar[x_ind_list[q]]=label[1]
             end
         end
     end

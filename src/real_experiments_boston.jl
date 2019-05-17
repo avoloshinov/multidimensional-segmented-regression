@@ -14,7 +14,7 @@ for row in f
     #push!(X, [row.temp, row.hum, row.atemp,row.windspeed]) #row.mnth
     #push!(y, row.cnt)
     #println("a=$(row.hr),a=$(row.hr), b=$(row.holiday), c=$(row.temp)")
-    push!(X, [row.crim, row.rm, row.dis, row.lstat]) #row.mnth
+    push!(X, [row.lstat,row.rm, row.crim,row.dis]) #row.mnth
     push!(y, row.medv)
 end
 
