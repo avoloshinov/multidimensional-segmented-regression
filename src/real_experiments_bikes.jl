@@ -11,7 +11,7 @@ f = CSV.File("day.csv")
 X = Array{Array{Float64,1}}(undef,0)
 y = Array{Float64,1}(undef,0)
 for row in f
-    push!(X, [row.temp, row.hum,row.windspeed,row.mnth])
+    push!(X, [row.mnth,row.temp, row.hum,row.windspeed])
     push!(y, row.cnt)
     #println("a=$(row.hr),a=$(row.hr), b=$(row.holiday), c=$(row.temp)")
     #push!(X, [row.lstat,row.rm, row.crim,row.dis]) #row.mnth

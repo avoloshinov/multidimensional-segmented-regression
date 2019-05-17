@@ -104,6 +104,7 @@ function generate_random_regression_data(num_rectangles::Int, n::Int, d::Int, z:
     end
 
     y = ystar + sigma * randn(n)
+    #y = ystar
 
     y_opt = Array{Float64,1}(undef,n)
 
