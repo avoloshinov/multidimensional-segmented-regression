@@ -144,12 +144,22 @@ function add_children_to_parent(Y::Array{Array{Float64,1},1}, y::Array{Float64,1
     end
 
     return [parent,parent.children]
+
 end
 
 
 function create_tree(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::Int, levels::Int)
     n = length(y)
-    indices = fill(float([0,n+1]),z)
+    cols = transform_matrix(X)
+
+    indices = Array{Array{Float64,1}}(undef,0)
+
+    for t=1:z
+        val = length(unique(cols[t]))
+        push!(indices, float([0,val]))
+    end
+
+    #indices = [float([0,2]),float([0,100])]#fill(float([0,n]),z)
     root = new_node(collect(1:n), X, y, indices,0)
     cur_children = Array{NodeRect,1}(undef,0)
     cur_children = [root]
@@ -161,14 +171,27 @@ function create_tree(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::Int, 
     all_leaves = Array{NodeRect,1}(undef,0)
 
     for level=1:levels
-        for i=1:size(cur_children)[1]
+        #println("level", level)
+        for i=1:length(cur_children)
+            #println("cur_child is")
+            #println(cur_children[i].data)
             if length(cur_children[i].data) > 1
-                output = add_children_to_parent(X, y, cur_children[i],z,data_ordering)
+                output = add_children_to_parent(X, y, cur_children[i], z, data_ordering)
                 cur_children[i] = output[1]
+                if level == levels
+                    if output[2] == []
+                            push!(all_leaves, cur_children[i])
+                    else
+                        for child in output[2]
+                            push!(all_leaves,child)
+                        end
+                    end
+                end
                 for child in output[2]
                     push!(cur_children_temp, child)
                 end
             else
+                cur_children[i].children = []
                 push!(all_leaves, cur_children[i])
             end
         end

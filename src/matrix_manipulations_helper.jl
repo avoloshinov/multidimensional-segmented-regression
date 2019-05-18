@@ -45,7 +45,7 @@ function coordinate_ranking(X::Array{Array{Float64,1},1},z::Int)
     for row=1:n
         rank = Array{Int,1}(undef,0)
         for i=1:z
-            index = findfirst(x->x==X[row][i],sort(cols[i]))
+            index = findfirst(x->x==X[row][i],sort(unique(cols[i])))
             push!(rank, index)
         end
         push!(rankings,rank)

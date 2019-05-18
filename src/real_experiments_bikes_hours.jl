@@ -6,28 +6,32 @@ using ScikitLearn
 @sk_import tree: DecisionTreeRegressor
 
 using CSV
-f = CSV.File("day.csv")
+f = CSV.File("hour.csv")
 
 X = Array{Array{Float64,1}}(undef,0)
 y = Array{Float64,1}(undef,0)
+
 for row in f
-    push!(X, [row.hum,row.temp,row.windspeed,row.mnth])
+    push!(X, [row.hr,row.mnth,row.temp,row.windspeed,row.hum])
     push!(y, row.cnt)
-    #println("a=$(row.hr),a=$(row.hr), b=$(row.holiday), c=$(row.temp)")
-    #push!(X, [row.lstat,row.rm, row.crim,row.dis]) #row.mnth
-    #push!(y, row.medv)
 end
 
+#X = X[1:50]
+#y = y[1:50]
+
 function merging(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::Int, k::Int, n::Int)
-    stop_merge_param = k/4
-    levels = ceil(Int,log(2,n))
+    stop_merge_param = k
+    levels = ceil(Int,log(2,n)+1)
+    root, stuff = create_tree(X, y, z,levels)
+    println(length(stuff))
+    #print_leaves(stuff)
     leaves = fit_linear_merging(X, y, 0.0, z, levels, k, convert(Float64,stop_merge_param))
     yhat = leaves_to_yhat(X,leaves) #reconstruct the yhat from leaves
     return yhat, length(leaves)
 end
 
 z=2
-k=32
+k=14
 n=length(y)
 println("num samples ", n)
 result = @timed merging(X,y,z,k,n)
@@ -38,7 +42,7 @@ err_merging = mse(yhat_merging,y)
 
 
 function cart_trial(X::Array{Array{Float64,1},1}, y::Array{Float64,1})
-    regressor = DecisionTreeRegressor(max_leaf_nodes = 40)
+    regressor = DecisionTreeRegressor(max_leaf_nodes = num_leaves_merging)
     regressor.fit(X, y)
     yhat_cart = regressor.predict(X)
     return regressor, yhat_cart
