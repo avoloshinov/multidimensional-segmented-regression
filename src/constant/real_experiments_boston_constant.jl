@@ -14,8 +14,8 @@ for row in f
     #push!(X, [row.temp, row.hum, row.atemp,row.windspeed]) #row.mnth
     #push!(y, row.cnt)
     #println("a=$(row.hr),a=$(row.hr), b=$(row.holiday), c=$(row.temp)")
-    #push!(X, [row.crim,row.tax,row.age,row.rm,row.lstat ,row.dis]) #row.mnth
-    push!(X, [row.crim, row.lstat, row.rm,row.dis, row.age, row.b,row.ptratio,row.nox,row.tax])
+    #push!(X, [row.lstat,row.rm, row.crim,row.dis]) #row.mnth
+    push!(X, [row.crim, row.lstat,row.dis, row.age, row.b,row.ptratio,row.nox,row.tax,row.rm])
     push!(y, row.medv)
 end
 
@@ -33,6 +33,7 @@ function cart_trial(X::Array{Array{Float64,1},1}, y::Array{Float64,1},num_leaves
     yhat_cart = regressor.predict(X)
     return regressor, yhat_cart
 end
+
 
 function find_best(sigma_vals::Array{Float64}, k_vals::Array{Int},z::Int)
     best_sigma = sigma_vals[1]
@@ -61,13 +62,13 @@ function find_best(sigma_vals::Array{Float64}, k_vals::Array{Int},z::Int)
     return best_sigma, best_k
 end
 
-z=4
+z=2
 sigma_vals = [1.0,2.0,5.0,10.0,20.0]
 k_vals = [1,2,3,4,5,6]
 sigma,k = find_best(sigma_vals, k_vals,z)
 
 println("sigma is ", sigma)
-#println("k is ", k)
+println("k is ", k)
 
 n=length(y)
 println("num samples ", n)
@@ -81,7 +82,6 @@ err_merging = mse(yhat_merging,y)
 cart_result = @timed cart_trial(X,y,num_leaves_merging)
 yhat_cart = cart_result[1][2]
 cart_time = cart_result[2]
-
 err_cart =mse(yhat_cart,y)
 
 println("num leaves merging ", num_leaves_merging)

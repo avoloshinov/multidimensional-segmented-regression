@@ -6,21 +6,24 @@ using ScikitLearn
 @sk_import tree: DecisionTreeRegressor
 
 using CSV
-f = CSV.File("hour.csv")
+f = CSV.File("day.csv")
 
 X = Array{Array{Float64,1}}(undef,0)
 y = Array{Float64,1}(undef,0)
 
 for row in f
-    push!(X, [row.hr,row.temp,row.mnth,row.windspeed,row.hum])
+    push!(X, [row.mnth,row.temp,row.windspeed,row.hum])
     push!(y, row.cnt)
 end
+
+#X = X[1:50]
+#y = y[1:50]
 
 function merging(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::Int, k::Int, n::Int)
     stop_merge_param = k
     levels = ceil(Int,log(2,n)+1)
-    #root, stuff = create_tree(X, y, z,levels)
-    #println(length(stuff))
+    root, stuff = create_tree(X, y, z,levels)
+    println(length(stuff))
     #print_leaves(stuff)
     leaves = fit_linear_merging(X, y, 0.0, z, levels, k, convert(Float64,stop_merge_param))
     yhat = leaves_to_yhat(X,leaves) #reconstruct the yhat from leaves
@@ -28,7 +31,7 @@ function merging(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::Int, k::I
 end
 
 z=2
-k=16
+k=6
 n=length(y)
 println("num samples ", n)
 result = @timed merging(X,y,z,k,n)

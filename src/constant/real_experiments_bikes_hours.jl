@@ -28,7 +28,7 @@ function merging(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::Int, k::I
 end
 
 z=2
-k=16
+k=10
 n=length(y)
 println("num samples ", n)
 result = @timed merging(X,y,z,k,n)

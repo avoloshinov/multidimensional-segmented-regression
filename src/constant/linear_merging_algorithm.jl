@@ -9,7 +9,7 @@ function rectangle_piece_merging_error(p::NodeRect, X::Array{Array{Float64,1},1}
     new_y = indices_to_sub_labels(y, p.data)
     size = length(new_y)
     fit = fill(p.theta[1],size)
-    error = mse(new_y,fit)
+    error = (sum((new_y - fit).^2)) - rectangle_size(p) * sigma^2
     return error
 end
 
@@ -99,6 +99,6 @@ function leaves_to_yhat(X::Array{Array{Float64,1},1}, leaves::Array{NodeRect,1})
             yhat[index] = leaf.theta[1]
         end
     end
-    
+
     return yhat
 end

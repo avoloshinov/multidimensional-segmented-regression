@@ -3,7 +3,7 @@ include("synthetic_data_generation.jl")
 using PyCall
 using Statistics
 
-import Conda
+#import Conda
 #Conda.add("scikit-learn")
 
 using ScikitLearn

@@ -3,7 +3,7 @@ include("synthetic_data_generation_constant.jl")
 using PyCall
 using Statistics
 
-import Conda
+#import Conda
 #Conda.add("scikit-learn")
 
 using ScikitLearn
@@ -74,7 +74,7 @@ function run_experiments(num_trials::Int, sigma::Float64, k::Int, n_vals::Array{
             true_mses[i, ii] = mse(y_opt,ystar)
             true_pieces[i,ii] = k
 
-            cart_result = @timed cart_trial(X,y,k)
+            #cart_result = @timed cart_trial(X,y,k)
             cart_result = @timed cart_trial(X,y,k)
             y_cart = cart_result[1][1]
             cart_time = cart_result[2]
@@ -85,7 +85,7 @@ function run_experiments(num_trials::Int, sigma::Float64, k::Int, n_vals::Array{
             cart_pieces[i,ii] = length(unique(regressor.apply(X)))
 
             for (algo_name, algo_fun) in algos
-                result = @timed algo_fun(X, y, z, k, n_val)
+                #result = @timed algo_fun(X, y, z, k, n_val)
                 result = @timed algo_fun(X, y, z, k, n_val)
                 yhat_result = result[1][1]
                 pieces_output = result[1][2]
