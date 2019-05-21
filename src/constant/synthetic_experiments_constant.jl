@@ -67,9 +67,13 @@ function run_experiments(num_trials::Int, sigma::Float64, k::Int, n_vals::Array{
     true_mses = Array{Float64,2}(undef, length(n_vals), num_trials)
     true_pieces = Array{Float64,2}(undef, length(n_vals), num_trials)
 
-    cart_mses = Array{Float64,2}(undef, length(n_vals), num_trials)
-    cart_pieces = Array{Float64,2}(undef, length(n_vals), num_trials)
-    cart_times = Array{Float64,2}(undef, length(n_vals), num_trials)
+    cart1_mses = Array{Float64,2}(undef, length(n_vals), num_trials)
+    cart1_pieces = Array{Float64,2}(undef, length(n_vals), num_trials)
+    cart1_times = Array{Float64,2}(undef, length(n_vals), num_trials)
+    cart2_mses = Array{Float64,2}(undef, length(n_vals), num_trials)
+    cart2_pieces = Array{Float64,2}(undef, length(n_vals), num_trials)
+    cart2_times = Array{Float64,2}(undef, length(n_vals), num_trials)
+
 
     @timed 30^30
 
@@ -81,17 +85,29 @@ function run_experiments(num_trials::Int, sigma::Float64, k::Int, n_vals::Array{
             true_mses[i, ii] = mse(y_opt,ystar)
             true_pieces[i,ii] = k
 
+            #cart_result = @timed cart_trial(X,y,k)
             cart_result = @timed cart_trial(X,y,k)
             cart_result = @timed cart_trial(X,y,k)
             y_cart = cart_result[1][1]
             cart_time = cart_result[2]
             regressor = cart_result[1][2]
 
-            cart_times[i,ii] = cart_time
-            cart_mses[i, ii] = mse(y_cart,ystar)
-            cart_pieces[i,ii] = length(unique(regressor.apply(X)))
+            cart1_times[i,ii] = cart_time
+            cart1_mses[i, ii] = mse(y_cart,ystar)
+            cart1_pieces[i,ii] = length(unique(regressor.apply(X)))
+
+            cart_result = @timed cart_trial(X,y,Int(1.5*k))
+            cart_result = @timed cart_trial(X,y,Int(1.5*k))
+            y_cart = cart_result[1][1]
+            cart_time = cart_result[2]
+            regressor = cart_result[1][2]
+
+            cart2_times[i,ii] = cart_time
+            cart2_mses[i, ii] = mse(y_cart,ystar)
+            cart2_pieces[i,ii] = length(unique(regressor.apply(X)))
 
             for (algo_name, algo_fun) in algos
+                #result = @timed algo_fun(X, y, z, k, n_val)
                 result = @timed algo_fun(X, y, z, k, n_val)
                 result = @timed algo_fun(X, y, z, k, n_val)
                 yhat_result = result[1][1]
@@ -125,12 +141,19 @@ function run_experiments(num_trials::Int, sigma::Float64, k::Int, n_vals::Array{
     pieces_mean["true fit"] = vec(mean(true_pieces, dims=2))
     pieces_std["true fit"] = vec(std(true_pieces, dims=2))
 
-    mses_mean["CART fit"] = vec(mean(cart_mses, dims=2))
-    mses_std["CART fit"] = vec(std(cart_mses, dims=2))
-    pieces_mean["CART fit"] = vec(mean(cart_pieces, dims=2))
-    pieces_std["CART fit"] = vec(std(cart_pieces, dims=2))
-    times_mean["CART fit"] = vec(mean(cart_times, dims=2))
-    times_std["CART fit"] = vec(std(cart_times, dims=2))
+    mses_mean["CART fit 16"] = vec(mean(cart1_mses, dims=2))
+    mses_std["CART fit 16"] = vec(std(cart1_mses, dims=2))
+    pieces_mean["CART fit 16"] = vec(mean(cart1_pieces, dims=2))
+    pieces_std["CART fit 16"] = vec(std(cart1_pieces, dims=2))
+    times_mean["CART fit 16"] = vec(mean(cart1_times, dims=2))
+    times_std["CART fit 16"] = vec(std(cart1_times, dims=2))
+
+    mses_mean["CART fit 24"] = vec(mean(cart2_mses, dims=2))
+    mses_std["CART fit 24"] = vec(std(cart2_mses, dims=2))
+    pieces_mean["CART fit 24"] = vec(mean(cart2_pieces, dims=2))
+    pieces_std["CART fit 24"] = vec(std(cart2_pieces, dims=2))
+    times_mean["CART fit 24"] = vec(mean(cart2_times, dims=2))
+    times_std["CART fit 24"] = vec(std(cart2_times, dims=2))
 
     return mses_mean, mses_std, times_mean, times_std, pieces_mean, pieces_std
 end
