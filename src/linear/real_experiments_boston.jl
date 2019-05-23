@@ -18,9 +18,9 @@ end
 function merging(X::Array{Array{Float64,1},1}, y::Array{Float64,1}, z::Int, k::Int, n::Int, sigma::Float64)
     stop_merge_param = k
     levels = ceil(Int,log(2,n))
-    leaves = fit_linear_merging(X, y, sigma, z, levels, k, convert(Float64,stop_merge_param))
+    leaves, root = fit_linear_merging(X, y, sigma, z, levels, k, convert(Float64,stop_merge_param))
     yhat = leaves_to_yhat(X,leaves) #reconstruct the yhat from leaves
-    return yhat, length(leaves)
+    return yhat, length(leaves), root
 end
 
 function cart_trial(X::Array{Array{Float64,1},1}, y::Array{Float64,1},num_leaves_merging::Int)
