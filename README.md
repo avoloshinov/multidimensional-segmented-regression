@@ -4,7 +4,7 @@ The code is written in Julia (v1.0.3).
 
 Packages that need to be installed using Pkg: CSV, LinearAlgebra, Combinatorics, ScikitLearn, PyPlot.
 
-To see our experiments, see the Jupyter notebooks in /testing.
+To see our experiments, see the Jupyter notebooks in [/testing](https://github.com/voloshinov/multidimensional-segmented-regression/tree/master/src/testing).
 
 The notebook [/testing/synthetic_data_experiments_constant.ipynb](https://github.com/voloshinov/multidimensional-segmented-regression/blob/master/src/testing/synthetic_data_experiments_constant.ipynb) contains our synthetic data experiments. 
 
